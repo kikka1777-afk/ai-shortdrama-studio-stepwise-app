@@ -1,6 +1,7 @@
 param(
   [string]$BaseUrl = "https://sub2api.aisite.net/v1",
   [string]$Project = "ai-shortdrama-studio-stepwise-app",
+  [string]$ProductionUrl = "https://ai-shortdrama-studio-stepwise-app.vercel.app",
   [switch]$SkipDeploy
 )
 
@@ -61,6 +62,15 @@ function Set-VercelProductionEnv {
   Invoke-VercelWithInput -InputValue $Value -VercelArgs @("env", "add", $Name, "production", "--no-color", "--project", $Project) | Out-Host
 }
 
+function Verify-ProductionStatus {
+  if ([string]::IsNullOrWhiteSpace($ProductionUrl)) { return }
+
+  $statusUrl = $ProductionUrl.TrimEnd("/") + "/api/generate"
+  Write-Host "Checking production API status: $statusUrl"
+  $status = Invoke-RestMethod -Uri $statusUrl -Method Get -TimeoutSec 60
+  Write-Host ("Production hasServerKey=" + $status.hasServerKey + "; base=" + $status.base + "; timeoutMs=" + $status.timeoutMs)
+}
+
 try {
   $projectRoot = Split-Path -Parent $PSScriptRoot
   Set-Location -LiteralPath $projectRoot
@@ -87,6 +97,8 @@ try {
     Write-Host "Redeploying production..."
     Invoke-Vercel -VercelArgs @("deploy", "--prod", "--no-color", "--non-interactive", "--project", $Project) | Out-Host
   }
+
+  Verify-ProductionStatus
 
   Write-Host ""
   Write-Host "Done. Teammates can now use the app without entering Base URL or key."
