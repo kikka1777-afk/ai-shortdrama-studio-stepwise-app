@@ -6,8 +6,9 @@ It does not overwrite the original `ai-shortdrama-studio-app` project. The UI is
 
 1. Script
 2. Episode script
-3. Storyboard script
-4. Art assets
+3. Character bible
+4. Storyboard script
+5. Asset list
 
 Each step runs independently. After a step finishes, the left chat panel reports what was completed and shows a summary table. The fixed action bar then offers:
 
@@ -36,6 +37,10 @@ For teammates, prefer Vercel environment variables:
 
 - `OPENAI_API_KEY`
 - `OPENAI_BASE_URL`
+
+The deployed app exposes a read-only status check at `/api/generate`. If it returns
+`"hasServerKey": false`, the production project still cannot generate for teammates.
+`OPENAI_BASE_URL` defaults to `https://sub2api.aisite.net/v1`.
 
 The safest local sync path is file based:
 

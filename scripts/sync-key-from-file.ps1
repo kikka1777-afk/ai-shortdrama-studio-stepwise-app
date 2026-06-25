@@ -88,8 +88,12 @@ try {
   }
 
   Log "Done. Teammates can now use the app without entering Base URL or key."
-  exit 0
+  $global:SyncExitCode = 0
 } catch {
   Log "FAILED: $($_.Exception.Message)"
-  exit 1
+  $global:SyncExitCode = 1
+} finally {
+  Write-Host ""
+  Write-Host "Log file: $logPath"
+  Read-Host "Press Enter to close this window"
 }

@@ -1,6 +1,8 @@
 @echo off
 setlocal
 cd /d "%~dp0.."
+echo This window will stay open. Paste your key when PowerShell asks for it.
+echo.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -NoExit -File "%~dp0sync-vercel-openai-key.ps1"
 echo.
 pause

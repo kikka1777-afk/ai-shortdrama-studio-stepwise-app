@@ -41,7 +41,7 @@ function originV1ChatUrl(baseUrl) {
 }
 
 function looksLikeHtml(text, contentType = '') {
-  const sample = String(text || '').trim().slice(0, 500).toLowerCase();
+  const sample = String(text || '').trim().slice(0, 600).toLowerCase();
   return String(contentType || '').toLowerCase().includes('text/html') ||
     sample.startsWith('<!doctype html') ||
     sample.startsWith('<html') ||
@@ -162,9 +162,25 @@ function errorFromResult(result) {
     '；请求地址：' + result.url;
 }
 
+function statusPayload() {
+  const base = process.env.OPENAI_BASE_URL || process.env.OPENAI_API_BASE || 'https://sub2api.aisite.net/v1';
+  return {
+    ok: true,
+    hasServerKey: Boolean(process.env.OPENAI_API_KEY),
+    base: normalizeOpenAIBase(base),
+    model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
+    timeoutMs: REQUEST_TIMEOUT_MS
+  };
+}
+
 module.exports = async (req, res) => {
+  if (req.method === 'GET') {
+    res.status(200).json(statusPayload());
+    return;
+  }
+
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method Not Allowed，请用 POST' });
+    res.status(405).json({ error: 'Method Not Allowed，请使用 POST。' });
     return;
   }
 
@@ -179,29 +195,31 @@ module.exports = async (req, res) => {
       provider = 'openai',
       key,
       base,
-      model = DEFAULT_MODEL,
+      model,
       apiVersion = '2024-08-01-preview',
       system,
       user,
       wantJSON
     } = body;
 
+    const envBase = process.env.OPENAI_BASE_URL || process.env.OPENAI_API_BASE || 'https://sub2api.aisite.net/v1';
     const apiKey = (key && key.trim()) || process.env.OPENAI_API_KEY;
     if (!apiKey) {
       res.status(400).json({
-        error: '未配置 API Key：请用管理员入口配置，或在 Vercel 项目 Environment Variables 里设置 OPENAI_API_KEY。'
+        error: '未配置 OPENAI_API_KEY：新 Vercel 项目没有服务端 Key。请管理员把 OPENAI_API_KEY 写入该项目的 Production Environment Variables。'
       });
       return;
     }
 
+    const selectedModel = model || process.env.OPENAI_MODEL || DEFAULT_MODEL;
     const messages = [
       { role: 'system', content: system || '' },
       { role: 'user', content: user || '' }
     ];
     const payload = {
-      model: model || DEFAULT_MODEL,
+      model: selectedModel,
       temperature: wantJSON ? 0.3 : 0.7,
-      max_tokens: wantJSON ? 3000 : 1400,
+      max_tokens: wantJSON ? 3600 : 1800,
       messages
     };
     if (wantJSON) payload.response_format = { type: 'json_object' };
@@ -210,20 +228,20 @@ module.exports = async (req, res) => {
     const headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'User-Agent': 'ai-shortdrama-studio-stepwise/1.0'
+      'User-Agent': 'ai-shortdrama-studio-stepwise/1.1'
     };
 
     if (provider === 'azure') {
-      const ep = ((base && base.trim()) || process.env.OPENAI_BASE_URL || '').replace(/\/+$/, '');
+      const ep = ((base && base.trim()) || envBase || '').replace(/\/+$/, '');
       if (!ep) {
-        res.status(400).json({ error: 'Azure 模式需要填写 Endpoint，或在 Vercel 环境变量里设置 OPENAI_BASE_URL。' });
+        res.status(400).json({ error: 'Azure 模式需要填写 Endpoint，或设置 OPENAI_BASE_URL。' });
         return;
       }
-      url = `${ep}/openai/deployments/${encodeURIComponent(model || DEFAULT_MODEL)}/chat/completions?api-version=${apiVersion}`;
+      url = `${ep}/openai/deployments/${encodeURIComponent(selectedModel)}/chat/completions?api-version=${apiVersion}`;
       headers['api-key'] = apiKey;
       delete payload.model;
     } else {
-      const configuredBase = (base && base.trim()) || process.env.OPENAI_BASE_URL || DEFAULT_BASE_URL;
+      const configuredBase = (base && base.trim()) || envBase || DEFAULT_BASE_URL;
       url = chatUrlFromBase(configuredBase);
       headers.Authorization = 'Bearer ' + apiKey;
       payload.stream = true;
