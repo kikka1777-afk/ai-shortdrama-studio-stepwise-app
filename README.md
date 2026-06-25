@@ -37,8 +37,12 @@ For teammates, prefer Vercel environment variables:
 - `OPENAI_API_KEY`
 - `OPENAI_BASE_URL`
 
-The included script can sync these values to the linked Vercel project:
+The safest local sync path is file based:
 
 ```powershell
-.\scripts\sync-vercel-openai-key.ps1
+copy .\scripts\OPENAI_API_KEY.local.txt.example .\scripts\OPENAI_API_KEY.local.txt
+notepad .\scripts\OPENAI_API_KEY.local.txt
+.\scripts\sync-key-from-file.cmd
 ```
+
+`OPENAI_API_KEY.local.txt` and sync logs are ignored by Git.
