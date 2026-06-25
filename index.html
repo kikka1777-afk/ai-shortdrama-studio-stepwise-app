@@ -1,0 +1,1066 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI短剧分步工作台</title>
+<style>
+:root{
+  --bg:#f6f7f4;
+  --panel:#ffffff;
+  --panel-2:#f0f4ef;
+  --ink:#17211d;
+  --muted:#66746c;
+  --line:#d8dfd7;
+  --accent:#116b5b;
+  --accent-2:#8d4f7b;
+  --warn:#b35a3d;
+  --soft:#e7efe8;
+  --shadow:0 18px 44px rgba(31,42,35,.12);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",Arial,sans-serif;
+  color:var(--ink);
+  background:var(--bg);
+  letter-spacing:0;
+}
+button,input,textarea,select{font:inherit}
+button{
+  border:1px solid var(--line);
+  background:var(--panel);
+  color:var(--ink);
+  border-radius:8px;
+  min-height:38px;
+  padding:8px 12px;
+  cursor:pointer;
+}
+button:hover{border-color:#9db3a6;background:#fbfdfb}
+button:disabled{opacity:.48;cursor:not-allowed}
+.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.primary:hover{background:#0d5a4d;border-color:#0d5a4d}
+.secondary{background:#f7f2f6;border-color:#d8c4d0;color:#603b56}
+.danger{background:#fff7f4;border-color:#e0b9aa;color:#8d3d25}
+.ghost{background:transparent}
+.icon-btn{width:38px;padding:0;display:inline-grid;place-items:center}
+header{
+  height:64px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:0 22px;
+  border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,.9);
+}
+.brand{font-weight:800;font-size:18px;white-space:nowrap}
+.brand b{color:var(--accent)}
+.top-status{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--muted);
+  font-size:13px;
+}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.spacer{flex:1}
+.app{
+  height:calc(100vh - 64px);
+  min-height:680px;
+  display:grid;
+  grid-template-columns:minmax(320px,390px) minmax(0,1fr);
+}
+.chat{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  border-right:1px solid var(--line);
+  background:#eef3ef;
+}
+.chat-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:18px;
+  border-bottom:1px solid var(--line);
+}
+.chat-head h2{margin:0;font-size:16px}
+.messages{
+  flex:1;
+  overflow:auto;
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.msg{
+  border:1px solid var(--line);
+  background:var(--panel);
+  border-radius:8px;
+  padding:12px;
+  box-shadow:0 8px 22px rgba(36,48,40,.06);
+}
+.msg.user{margin-left:26px;background:#fffaf7;border-color:#e8cbbb}
+.msg.assistant{margin-right:16px}
+.msg .who{font-size:12px;color:var(--muted);margin-bottom:6px}
+.msg h3{font-size:15px;margin:0 0 8px}
+.msg p{margin:0;color:#33413a;line-height:1.65}
+.msg ul{margin:8px 0 0 18px;padding:0;line-height:1.65}
+.msg table,.summary-table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+  font-size:12px;
+}
+.msg th,.msg td,.summary-table th,.summary-table td{
+  border:1px solid var(--line);
+  padding:7px;
+  vertical-align:top;
+  text-align:left;
+}
+.msg th,.summary-table th{background:#f4f7f2;color:#465249}
+.quick-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.quick-actions button{min-height:32px;font-size:12px;padding:6px 10px}
+.compose{
+  border-top:1px solid var(--line);
+  padding:12px;
+  background:#f8faf7;
+}
+.compose textarea{
+  width:100%;
+  min-height:70px;
+  resize:vertical;
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:10px;
+  outline:none;
+  background:#fff;
+  color:var(--ink);
+}
+.compose .row{display:flex;gap:8px;margin-top:8px}
+.workspace{
+  min-width:0;
+  overflow:auto;
+  padding:22px;
+}
+.steps{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(130px,1fr));
+  gap:10px;
+  margin-bottom:16px;
+}
+.step-tab{
+  min-height:64px;
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  text-align:left;
+  background:#fff;
+}
+.step-tab.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(17,107,91,.12)}
+.step-tab.done .step-num{background:var(--accent);color:#fff}
+.step-tab.pending{color:var(--muted)}
+.step-num{
+  width:26px;
+  height:26px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:var(--soft);
+  font-weight:800;
+  flex:0 0 auto;
+}
+.step-title{font-weight:800}
+.step-desc{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.work-panel{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:8px;
+  box-shadow:var(--shadow);
+  min-height:560px;
+  overflow:hidden;
+}
+.work-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  padding:20px;
+  border-bottom:1px solid var(--line);
+  background:#fbfcfa;
+}
+.work-head h1{font-size:22px;margin:0 0 6px}
+.work-head p{margin:0;color:var(--muted);line-height:1.55}
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:6px 10px;
+  font-size:12px;
+  color:var(--muted);
+  white-space:nowrap;
+}
+.badge.ready{color:#0b6354;border-color:#a8cec4;background:#edf8f5}
+.badge.run{color:#8a4d12;border-color:#e2c89d;background:#fff9ed}
+.body{padding:20px}
+.setup-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.5fr) minmax(260px,.75fr);
+  gap:16px;
+}
+.field{display:flex;flex-direction:column;gap:7px;margin-bottom:12px}
+.field label{font-size:12px;font-weight:800;color:#47564e}
+.field textarea,.field input,.field select{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:10px;
+  outline:none;
+  background:#fff;
+  color:var(--ink);
+}
+.field textarea{min-height:260px;resize:vertical;line-height:1.6}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  border:1px solid var(--line);
+  background:#fff;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  cursor:pointer;
+}
+.chip.on{background:#edf8f5;border-color:#9ecabf;color:#07584b}
+.output{
+  display:grid;
+  gap:14px;
+}
+.empty{
+  border:1px dashed #bfcbbf;
+  border-radius:8px;
+  padding:26px;
+  color:var(--muted);
+  background:#fbfcfa;
+}
+.prose{
+  line-height:1.8;
+  white-space:pre-wrap;
+  font-size:15px;
+}
+.section{
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  overflow:hidden;
+}
+.section-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 14px;
+  background:#f6f8f5;
+  border-bottom:1px solid var(--line);
+}
+.section-head strong{font-size:15px}
+.section-body{padding:14px}
+.kvs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.kv{
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:10px;
+  background:#fcfdfb;
+}
+.kv b{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+.kv span{line-height:1.55}
+.shot-row,.asset-row{
+  border-top:1px solid var(--line);
+  padding:12px 0;
+}
+.shot-row:first-child,.asset-row:first-child{border-top:0;padding-top:0}
+.mini{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin:8px 0;
+}
+.mini span{
+  background:#f3f6f1;
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:4px 8px;
+  font-size:12px;
+  color:#506159;
+}
+.prompt{
+  background:#111b17;
+  color:#e8f3ed;
+  border-radius:8px;
+  padding:10px;
+  font-size:12px;
+  line-height:1.55;
+  overflow:auto;
+}
+.action-bar{
+  position:sticky;
+  bottom:0;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  padding:14px 20px;
+  border-top:1px solid var(--line);
+  background:rgba(255,255,255,.94);
+}
+.modal{
+  position:fixed;
+  inset:0;
+  display:none;
+  place-items:center;
+  background:rgba(13,20,16,.38);
+  z-index:20;
+  padding:18px;
+}
+.modal.on{display:grid}
+.dialog{
+  width:min(720px,calc(100vw - 36px));
+  max-height:calc(100vh - 36px);
+  overflow:auto;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:8px;
+  box-shadow:var(--shadow);
+}
+.dialog-head,.dialog-actions{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:16px;
+  border-bottom:1px solid var(--line);
+}
+.dialog-actions{border-top:1px solid var(--line);border-bottom:0;justify-content:flex-end}
+.dialog h2{font-size:18px;margin:0}
+.dialog-body{padding:16px}
+.dialog textarea{
+  width:100%;
+  min-height:140px;
+  resize:vertical;
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:10px;
+}
+pre.raw{
+  white-space:pre-wrap;
+  word-break:break-word;
+  background:#101815;
+  color:#e7f2ea;
+  border-radius:8px;
+  padding:14px;
+  max-height:460px;
+  overflow:auto;
+  font-size:12px;
+}
+.toast{
+  position:fixed;
+  right:18px;
+  bottom:18px;
+  background:#17211d;
+  color:#fff;
+  border-radius:8px;
+  padding:10px 12px;
+  display:none;
+  z-index:40;
+}
+.toast.on{display:block}
+@media (max-width:980px){
+  .app{grid-template-columns:1fr;height:auto}
+  .chat{height:430px;border-right:0;border-bottom:1px solid var(--line)}
+  .steps{grid-template-columns:1fr 1fr}
+  .setup-grid{grid-template-columns:1fr}
+}
+@media (max-width:620px){
+  header{padding:0 12px}
+  .brand{font-size:16px}
+  .top-status{display:none}
+  .workspace{padding:12px}
+  .steps{grid-template-columns:1fr}
+  .work-head{display:block}
+  .kvs,.grid-2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">AI<b>短剧</b>分步工作台</div>
+  <div class="top-status"><span class="dot"></span><span id="topStatus">第 1 / 4 步 · 剧本</span></div>
+  <div class="spacer"></div>
+  <button class="ghost" id="settingsBtn" onclick="openSettings()" style="display:none">设置接口</button>
+  <button class="ghost" onclick="resetFlow()">新建流程</button>
+</header>
+
+<main class="app">
+  <aside class="chat">
+    <div class="chat-head">
+      <h2>AI 对话</h2>
+      <button class="icon-btn" title="清空对话" onclick="clearMessages()">×</button>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="compose">
+      <textarea id="chatInput" placeholder="输入对当前步骤的修改意见"></textarea>
+      <div class="row">
+        <button class="primary" onclick="applyChatInstruction()">发送修改</button>
+        <button onclick="loadSample()">加载样例</button>
+      </div>
+    </div>
+  </aside>
+
+  <section class="workspace">
+    <div class="steps" id="stepTabs"></div>
+    <div class="work-panel">
+      <div class="work-head">
+        <div>
+          <h1 id="pageTitle">剧本</h1>
+          <p id="pageDesc">把原始素材整理成可拍摄的短剧故事文本。</p>
+        </div>
+        <span class="badge" id="pageBadge">待生成</span>
+      </div>
+      <div class="body" id="pageBody"></div>
+      <div class="action-bar" id="actionBar"></div>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="settingsModal">
+  <div class="dialog">
+    <div class="dialog-head">
+      <h2>接口设置</h2>
+      <button class="icon-btn" onclick="closeSettings()">×</button>
+    </div>
+    <div class="dialog-body">
+      <div class="grid-2">
+        <div class="field">
+          <label>Provider</label>
+          <select id="provider"><option value="openai">OpenAI 兼容</option><option value="azure">Azure OpenAI</option></select>
+        </div>
+        <div class="field">
+          <label>Model / Deployment</label>
+          <input id="model" placeholder="gpt-4o-mini" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Base URL / Endpoint</label>
+        <input id="baseUrl" placeholder="https://sub2api.aisite.net/v1" />
+      </div>
+      <div class="field">
+        <label>API Key</label>
+        <input id="apiKey" type="password" placeholder="留空则使用 Vercel 环境变量" />
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button onclick="closeSettings()">取消</button>
+      <button class="primary" onclick="saveSettings()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="editModal">
+  <div class="dialog">
+    <div class="dialog-head">
+      <h2 id="editTitle">修改当前步骤</h2>
+      <button class="icon-btn" onclick="closeEdit()">×</button>
+    </div>
+    <div class="dialog-body">
+      <div class="field">
+        <label>修改目标</label>
+        <input id="editTarget" placeholder="例如：第 2 集、主角人设、镜头 3、某个道具" />
+      </div>
+      <div class="field">
+        <label>修改要求</label>
+        <textarea id="editText" placeholder="写清楚要改什么、保留什么。"></textarea>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button onclick="closeEdit()">取消</button>
+      <button class="primary" onclick="submitRevision()">应用修改</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="rawModal">
+  <div class="dialog">
+    <div class="dialog-head">
+      <h2>原始数据</h2>
+      <button class="icon-btn" onclick="closeRaw()">×</button>
+    </div>
+    <div class="dialog-body"><pre class="raw" id="rawData"></pre></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STYLE_MAP={
+  "Theatrical Cinematic":"theatrical cinematic lighting, expressive faces, premium vertical short drama",
+  "Realistic Modern":"realistic modern Chinese short-drama style, natural light, grounded production design",
+  "Noir Romance":"noir romance mood, high contrast lighting, elegant shadows, vertical composition",
+  "Youth Bright":"bright youth drama style, clean color, soft daylight, energetic framing"
+};
+const TAGS=["都市","逆袭","甜宠","悬疑","复仇","家庭","职场","古风","奇幻","喜剧"];
+const SAMPLE_RAW=`林羽在云家做了三年上门女婿。三年来，他端茶倒水、洗衣做饭，受尽全家白眼。岳父云海天嫌他一事无成，妻子云楚楚也从未真正正眼看过他。
+
+这天，云氏集团濒临破产。家宴上，云海天当众羞辱林羽，逼他签下离婚协议。没人知道，三年前隐姓埋名的林羽，正是商业版图横跨半个亚洲的羽盛资本真正掌门人。而此刻唯一能救云氏的神秘金主 L 先生，正是被他们踩在脚下的这个上门女婿。`;
+
+const STEPS=[
+  {id:"script",title:"剧本",desc:"故事重构 · 冲突、人物与结尾钩子",wantJSON:false},
+  {id:"episodes",title:"分集剧本",desc:"分页大纲 · 每集时长、角色、钩子",wantJSON:true},
+  {id:"storyboard",title:"分镜剧本",desc:"镜头拆解 · 景别、运镜、画面提示",wantJSON:true},
+  {id:"assets",title:"美术资产",desc:"视觉资产 · 角色、场景、道具与 image_prompt",wantJSON:true}
+];
+
+let state={
+  active:0,
+  running:false,
+  params:{
+    raw:"",
+    tags:["都市","逆袭","情感"],
+    total:4,
+    ep1:120,
+    dur:75,
+    hook:5,
+    style:"Theatrical Cinematic"
+  },
+  outputs:{},
+  messages:[]
+};
+let editStepId=null;
+
+function esc(s){
+  return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+}
+function compact(s,n=3600){return String(s||"").slice(0,n);}
+function currentStep(){return STEPS[state.active];}
+function stepDone(id){return state.outputs[id]!==undefined&&state.outputs[id]!==null;}
+function styleFrag(){return STYLE_MAP[state.params.style]||STYLE_MAP["Theatrical Cinematic"];}
+function saveWork(){
+  localStorage.setItem("stepwise_state",JSON.stringify(state));
+}
+function loadWork(){
+  try{
+    const saved=JSON.parse(localStorage.getItem("stepwise_state")||"null");
+    if(saved&&saved.params&&saved.outputs) state={...state,...saved};
+  }catch(_e){}
+}
+function toast(text){
+  const t=document.getElementById("toast");
+  t.textContent=text;
+  t.classList.add("on");
+  setTimeout(()=>t.classList.remove("on"),2200);
+}
+
+function init(){
+  loadWork();
+  initAdminMode();
+  if(!state.messages.length){
+    addMessage("assistant",{title:"流程已就绪",text:"把素材放进第 1 步后，我会按步骤生成内容。每一步完成后，我会在这里汇报完成项并附上表格。"},false);
+  }
+  renderAll();
+}
+function renderAll(){
+  renderTabs();
+  renderPage();
+  renderMessages();
+  saveWork();
+}
+function renderTabs(){
+  const html=STEPS.map((s,i)=>{
+    const cls=["step-tab",i===state.active?"active":"",stepDone(s.id)?"done":"pending"].join(" ");
+    return `<button class="${cls}" onclick="goStep(${i})">
+      <span class="step-num">${stepDone(s.id)?"✓":i+1}</span>
+      <span><span class="step-title">${esc(s.title)}</span><span class="step-desc">${esc(s.desc)}</span></span>
+    </button>`;
+  }).join("");
+  document.getElementById("stepTabs").innerHTML=html;
+  const s=currentStep();
+  document.getElementById("topStatus").textContent=`第 ${state.active+1} / ${STEPS.length} 步 · ${s.title}`;
+}
+function renderPage(){
+  const s=currentStep();
+  document.getElementById("pageTitle").textContent=s.title;
+  document.getElementById("pageDesc").textContent=s.desc;
+  const badge=document.getElementById("pageBadge");
+  badge.className="badge"+(state.running?" run":stepDone(s.id)?" ready":"");
+  badge.textContent=state.running?"生成中":stepDone(s.id)?"已完成":"待生成";
+  document.getElementById("pageBody").innerHTML=renderStepBody(s);
+  document.getElementById("actionBar").innerHTML=renderActions(s);
+}
+function renderStepBody(step){
+  if(step.id==="script") return renderScriptStep();
+  if(!stepDone(step.id)) return `<div class="empty">${esc(step.title)}等待上一步内容。当前步骤会单独生成，完成后左侧会出现摘要和表格。</div>`;
+  if(step.id==="episodes") return renderEpisodes(state.outputs.episodes);
+  if(step.id==="storyboard") return renderStoryboard(state.outputs.storyboard);
+  return renderAssets(state.outputs.assets);
+}
+function renderScriptStep(){
+  const out=state.outputs.script;
+  if(out){
+    return `<div class="output"><div class="section"><div class="section-head"><strong>剧本正文</strong><span class="badge ready">文本</span></div><div class="section-body"><div class="prose">${esc(out)}</div></div></div></div>`;
+  }
+  return `<div class="setup-grid">
+    <div>
+      <div class="field">
+        <label>原始素材 / 创意</label>
+        <textarea id="rawInput">${esc(state.params.raw)}</textarea>
+      </div>
+      <div class="chips" id="tagChips">${TAGS.map(t=>`<span class="chip ${state.params.tags.includes(t)?"on":""}" onclick="toggleTag('${esc(t)}')">${esc(t)}</span>`).join("")}</div>
+    </div>
+    <div>
+      <div class="grid-2">
+        <div class="field"><label>目标集数</label><input id="totalInput" type="number" min="1" max="12" value="${esc(state.params.total)}"></div>
+        <div class="field"><label>结尾钩子秒数</label><input id="hookInput" type="number" min="3" max="15" value="${esc(state.params.hook)}"></div>
+        <div class="field"><label>第 1 集秒数</label><input id="ep1Input" type="number" min="30" max="300" value="${esc(state.params.ep1)}"></div>
+        <div class="field"><label>其余每集秒数</label><input id="durInput" type="number" min="30" max="240" value="${esc(state.params.dur)}"></div>
+      </div>
+      <div class="field"><label>统一画风</label><select id="styleInput">${Object.keys(STYLE_MAP).map(k=>`<option ${state.params.style===k?"selected":""}>${esc(k)}</option>`).join("")}</select></div>
+      <button onclick="loadSample()">加载样例素材</button>
+    </div>
+  </div>`;
+}
+function renderActions(step){
+  const done=stepDone(step.id);
+  const canRun=step.id==="script" || stepDone(STEPS[state.active-1]?.id);
+  if(state.running) return `<button disabled>正在生成...</button>`;
+  const runText=done?"重跑这一步":"生成这一步";
+  const buttons=[`<button class="primary" ${canRun?"":"disabled"} onclick="runCurrentStep()">${runText}</button>`];
+  if(done){
+    buttons.push(`<button class="secondary" onclick="openEdit('${step.id}')">修改这一步</button>`);
+    buttons.push(`<button onclick="openRaw('${step.id}')">查看原始数据</button>`);
+    if(state.active<STEPS.length-1) buttons.push(`<button class="primary" onclick="continueNext()">继续下一步</button>`);
+  }
+  if(state.active>0) buttons.push(`<button onclick="goStep(${state.active-1})">返回上一步</button>`);
+  return buttons.join("");
+}
+function renderEpisodes(data){
+  const rows=(data.episodes||[]).map(ep=>`
+    <div class="section">
+      <div class="section-head"><strong>EP${esc(ep.ep_number)} · ${esc(ep.title||"未命名")}</strong><span class="badge">${esc(ep.duration_seconds||"")} 秒</span></div>
+      <div class="section-body">
+        <div class="kvs">
+          <div class="kv"><b>出场角色</b><span>${esc((ep.characters||[]).join("、")||"未列出")}</span></div>
+          <div class="kv"><b>结尾钩子</b><span>${esc(ep.hook||"")}</span></div>
+        </div>
+        <div class="prose" style="margin-top:12px">${esc(ep.outline||"")}</div>
+      </div>
+    </div>`).join("");
+  return `<div class="output">${rows}</div>`;
+}
+function renderStoryboard(data){
+  const blocks=(data.episodes||[]).map(ep=>`
+    <div class="section">
+      <div class="section-head"><strong>EP${esc(ep.ep_number)} · 分镜</strong><span class="badge">${(ep.shots||[]).length} 镜头</span></div>
+      <div class="section-body">
+        ${(ep.shots||[]).map(sh=>`
+          <div class="shot-row">
+            <strong>镜头 ${esc(sh.shot_number||"")}</strong>
+            <div class="mini">
+              ${sh.duration_seconds?`<span>${esc(sh.duration_seconds)} 秒</span>`:""}
+              ${sh.shot_size?`<span>${esc(sh.shot_size)}</span>`:""}
+              ${sh.camera?`<span>${esc(sh.camera)}</span>`:""}
+            </div>
+            <div class="prose">${esc(sh.visual||"")}</div>
+            ${sh.audio_or_caption?`<div class="kv" style="margin-top:8px"><b>台词 / 字幕 / 声音</b><span>${esc(sh.audio_or_caption)}</span></div>`:""}
+            ${sh.purpose?`<div class="kv" style="margin-top:8px"><b>剧情作用</b><span>${esc(sh.purpose)}</span></div>`:""}
+            ${sh.visual_prompt?`<div class="prompt" style="margin-top:8px">${esc(sh.visual_prompt)}</div>`:""}
+          </div>`).join("")}
+      </div>
+    </div>`).join("");
+  return `<div class="output">${blocks}</div>`;
+}
+function renderAssets(data){
+  const groups=(data.groups||[]).map(g=>`
+    <div class="section">
+      <div class="section-head"><strong>${esc(g.category||"资产组")}</strong><span class="badge">${(g.items||[]).length} 项</span></div>
+      <div class="section-body">
+        ${(g.items||[]).map(item=>`
+          <div class="asset-row">
+            <strong>${esc(item.name||"未命名资产")}</strong>
+            <div class="mini">
+              ${item.tag?`<span>${esc(item.tag)}</span>`:""}
+              ${(item.appears_in_episodes||[]).length?`<span>EP ${(item.appears_in_episodes||[]).join(", ")}</span>`:""}
+            </div>
+            ${item.note?`<div class="prose">${esc(item.note)}</div>`:""}
+            ${item.image_prompt?`<div class="prompt" style="margin-top:8px">${esc(item.image_prompt)}</div>`:""}
+          </div>`).join("")}
+      </div>
+    </div>`).join("");
+  return `<div class="output">${groups}</div>`;
+}
+
+function renderMessages(){
+  document.getElementById("messages").innerHTML=state.messages.map(m=>{
+    const table=m.table?renderMsgTable(m.table):"";
+    const bullets=m.bullets?.length?`<ul>${m.bullets.map(b=>`<li>${esc(b)}</li>`).join("")}</ul>`:"";
+    const actions=m.stepId?`<div class="quick-actions">
+      ${state.active<STEPS.length-1?`<button onclick="continueNextFrom('${m.stepId}')">继续下一步</button>`:""}
+      <button onclick="openEdit('${m.stepId}')">修改这一步</button>
+      <button onclick="rerunStep('${m.stepId}')">重跑</button>
+      <button onclick="openRaw('${m.stepId}')">原始数据</button>
+    </div>`:"";
+    return `<div class="msg ${m.role}"><div class="who">${m.role==="user"?"你":"AI"}</div>${m.title?`<h3>${esc(m.title)}</h3>`:""}${m.text?`<p>${esc(m.text)}</p>`:""}${bullets}${table}${actions}</div>`;
+  }).join("");
+  const box=document.getElementById("messages");
+  box.scrollTop=box.scrollHeight;
+}
+function renderMsgTable(table){
+  return `<table><thead><tr>${table.headers.map(h=>`<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${table.rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+}
+function addMessage(role,data,render=true){
+  state.messages.push({role,created:Date.now(),...data});
+  if(render) renderAll();
+}
+function addCompletionMessage(stepId,usedFallback=false){
+  const summary=summarizeStep(stepId,state.outputs[stepId],usedFallback);
+  addMessage("assistant",{stepId,...summary});
+}
+function summarizeStep(stepId,out,usedFallback){
+  if(stepId==="script"){
+    const text=String(out||"");
+    return {
+      title:"剧本已完成",
+      text:usedFallback?"上游生成失败，已使用本地兜底文本。":"已完成故事重构，并保留可继续拆分的主线冲突。",
+      bullets:["整理了主角处境、核心冲突和反转钩子。","下一步可以拆成分集剧本。"],
+      table:{headers:["项目","结果"],rows:[["文本长度",`${text.length} 字`],["开场片段",text.slice(0,46)],["下一步","分集剧本"]]}
+    };
+  }
+  if(stepId==="episodes"){
+    const eps=out.episodes||[];
+    return {
+      title:"分集剧本已完成",
+      text:usedFallback?"分集 JSON 未完整返回，已用剧本文本生成兜底分集。":"已把剧本拆成结构化分集，每集都有钩子和时长。",
+      bullets:[`共 ${eps.length} 集。`,"每集保留标题、出场角色、剧情概要和结尾钩子。"],
+      table:{headers:["集数","标题","钩子"],rows:eps.slice(0,5).map(e=>[`EP${e.ep_number}`,e.title||"",e.hook||""])}
+    };
+  }
+  if(stepId==="storyboard"){
+    const eps=out.episodes||[];
+    return {
+      title:"分镜剧本已完成",
+      text:usedFallback?"分镜 JSON 未完整返回，已按每集关键冲突生成兜底镜头。":"已把分集内容拆成关键镜头，可交给拍摄或出图。",
+      bullets:[`覆盖 ${eps.length} 集。`,`共 ${eps.reduce((n,e)=>n+(e.shots||[]).length,0)} 个关键镜头。`],
+      table:{headers:["集数","镜头数","首镜头"],rows:eps.slice(0,5).map(e=>[`EP${e.ep_number}`,(e.shots||[]).length,(e.shots||[])[0]?.visual||""])}
+    };
+  }
+  const groups=out.groups||[];
+  return {
+    title:"美术资产已完成",
+    text:usedFallback?"资产 JSON 未完整返回，已按分集与分镜生成兜底资产。":"已整理角色、场景、道具等可复用视觉资产。",
+    bullets:[`共 ${groups.length} 个资产组。`,"每项资产都附带 image_prompt。"],
+    table:{headers:["资产组","数量","示例"],rows:groups.map(g=>[g.category||"",String((g.items||[]).length),(g.items||[]).slice(0,2).map(i=>i.name).join("、")])}
+  };
+}
+
+function collectInputs(){
+  const raw=document.getElementById("rawInput");
+  if(raw) state.params.raw=raw.value.trim();
+  const total=document.getElementById("totalInput");
+  if(total) state.params.total=Number(total.value)||4;
+  const hook=document.getElementById("hookInput");
+  if(hook) state.params.hook=Number(hook.value)||5;
+  const ep1=document.getElementById("ep1Input");
+  if(ep1) state.params.ep1=Number(ep1.value)||120;
+  const dur=document.getElementById("durInput");
+  if(dur) state.params.dur=Number(dur.value)||75;
+  const style=document.getElementById("styleInput");
+  if(style) state.params.style=style.value;
+}
+function toggleTag(tag){
+  const set=new Set(state.params.tags);
+  set.has(tag)?set.delete(tag):set.add(tag);
+  state.params.tags=[...set];
+  renderAll();
+}
+function goStep(i){
+  if(i<0||i>=STEPS.length) return;
+  state.active=i;
+  renderAll();
+}
+function continueNext(){
+  if(state.active>=STEPS.length-1){
+    addMessage("assistant",{title:"流程已完成",text:"四个步骤都已完成，可以查看原始数据或回到任一步继续修改。"});
+    return;
+  }
+  state.active+=1;
+  renderAll();
+  runCurrentStep();
+}
+function continueNextFrom(stepId){
+  const idx=STEPS.findIndex(s=>s.id===stepId);
+  if(idx>=0&&idx<STEPS.length-1){
+    state.active=idx+1;
+    renderAll();
+    runCurrentStep();
+  }
+}
+function rerunStep(stepId){
+  const idx=STEPS.findIndex(s=>s.id===stepId);
+  if(idx>=0){state.active=idx;renderAll();runCurrentStep();}
+}
+function resetFlow(){
+  state.active=0;
+  state.outputs={};
+  state.messages=[];
+  addMessage("assistant",{title:"新流程已开始",text:"素材和参数已保留，可以重新生成第 1 步。"},false);
+  renderAll();
+}
+function clearMessages(){
+  state.messages=[];
+  addMessage("assistant",{title:"对话已清空",text:"产物仍然保留在右侧步骤页。"});
+}
+function loadSample(){
+  state.params.raw=SAMPLE_RAW;
+  state.params.tags=["都市","逆袭","情感"];
+  state.params.total=4;
+  state.params.style="Theatrical Cinematic";
+  addMessage("user",{text:"加载样例素材"});
+  renderAll();
+}
+
+async function runCurrentStep(){
+  if(state.running) return;
+  collectInputs();
+  const step=currentStep();
+  if(step.id==="script"&&!state.params.raw){
+    toast("请先填写原始素材");
+    return;
+  }
+  const prev=STEPS[state.active-1];
+  if(prev&&!stepDone(prev.id)){
+    toast("请先完成上一步");
+    return;
+  }
+  state.running=true;
+  addMessage("user",{text:`开始生成：${step.title}`},false);
+  renderAll();
+  let usedFallback=false;
+  try{
+    const raw=await generateStep(step.id);
+    state.outputs[step.id]=step.wantJSON?parseJSON(raw):raw.trim();
+  }catch(err){
+    usedFallback=true;
+    state.outputs[step.id]=fallbackFor(step.id);
+  }finally{
+    state.running=false;
+  }
+  addCompletionMessage(step.id,usedFallback);
+  renderAll();
+}
+async function generateStep(stepId){
+  const p=state.params;
+  const tags=p.tags.length?JSON.stringify(p.tags):"未指定";
+  if(stepId==="script"){
+    return callLLM(prompts().script,`【题材标签】${tags}\n【原始素材】\n${compact(p.raw)}`,false);
+  }
+  if(stepId==="episodes"){
+    return callLLM(prompts().episodes,`【目标集数】${p.total}\n【第1集秒数】${p.ep1}\n【其余每集秒数】${p.dur}\n【结尾钩子秒数】${p.hook}\n【剧本】\n${compact(state.outputs.script)}`,true);
+  }
+  if(stepId==="storyboard"){
+    return callLLM(prompts().storyboard,`【画风】${p.style}\n【剧本】\n${compact(state.outputs.script,1800)}\n【分集剧本】\n${compact(JSON.stringify(state.outputs.episodes),3200)}`,true);
+  }
+  return callLLM(prompts().assets,`【画风】${p.style}\n【剧本】\n${compact(state.outputs.script,1500)}\n【分集剧本】\n${compact(JSON.stringify(state.outputs.episodes),2600)}\n【分镜剧本】\n${compact(JSON.stringify(state.outputs.storyboard),3200)}`,true);
+}
+function prompts(){
+  const p=state.params;
+  const tags=p.tags.length?JSON.stringify(p.tags):"未指定";
+  return {
+    script:`# Role: 短剧剧本 Agent
+把用户素材重构成可拍摄短剧故事。中文输出，600-900字。保留核心意图，强化开场冲突、人物欲望、反转和结尾钩子。不要分集，不要写解释。题材参考：${tags}。`,
+    episodes:`# Role: 分集剧本 Agent
+把剧本拆成结构化分集剧本。最多输出 ${Math.min(Number(p.total)||4,8)} 集。中文字段。严格输出 JSON，不要代码块。
+格式：{"total_episodes":4,"episodes":[{"ep_number":1,"title":"","duration_seconds":120,"characters":[""],"hook":"","outline":""}]}`,
+    storyboard:`# Role: 分镜剧本 Agent
+把分集剧本拆成可拍摄关键分镜。每集输出 3-5 个镜头。中文 visual，英文 visual_prompt，并在每个 visual_prompt 结尾加入 "${styleFrag()} --ar 9:16"。严格输出 JSON，不要代码块。
+格式：{"episodes":[{"ep_number":1,"shots":[{"shot_number":1,"duration_seconds":8,"shot_size":"近景","camera":"手持推进","visual":"","audio_or_caption":"","purpose":"","visual_prompt":""}]}]}`,
+    assets:`# Role: 美术资产 Agent
+根据剧本、分集和分镜提取真正需要统一设计或单独出图的视觉资产。最多 4 个资产组，每组最多 5 项。每项 image_prompt 使用英文，并以 "${styleFrag()} --ar 9:16" 结尾。严格输出 JSON，不要代码块。
+格式：{"groups":[{"category":"角色造型","items":[{"name":"","tag":"","note":"","appears_in_episodes":[1],"image_prompt":""}]}]}`
+  };
+}
+async function callLLM(system,user,wantJSON){
+  const res=await fetch("/api/generate",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      provider:localStorage.getItem("oa_provider")||"openai",
+      key:localStorage.getItem("oa_key")||"",
+      base:localStorage.getItem("oa_base")||"",
+      model:localStorage.getItem("oa_model")||"gpt-4o-mini",
+      system,user,wantJSON
+    })
+  });
+  const data=await res.json().catch(()=>({error:"接口返回不是 JSON"}));
+  if(!res.ok||data.error) throw new Error(data.error||"生成失败");
+  return data.content||"";
+}
+function parseJSON(s){
+  let t=String(s||"").trim().replace(/^```json/i,"").replace(/^```/,"").replace(/```$/,"").trim();
+  const first=Math.min(...["{","["].map(ch=>{const i=t.indexOf(ch);return i<0?Infinity:i;}));
+  if(Number.isFinite(first)) t=t.slice(first);
+  const last=Math.max(t.lastIndexOf("}"),t.lastIndexOf("]"));
+  if(last>0) {
+    try{return JSON.parse(t.slice(0,last+1));}catch(_e){}
+  }
+  try{return JSON.parse(t);}catch(_e){}
+  return JSON.parse(repairTruncatedJSON(t));
+}
+function repairTruncatedJSON(t){
+  let out="",stack=[],inStr=false,escp=false;
+  for(const ch of String(t||"")){
+    out+=ch;
+    if(inStr){
+      if(escp){escp=false;continue;}
+      if(ch==="\\"){escp=true;continue;}
+      if(ch==="\"") inStr=false;
+      continue;
+    }
+    if(ch==="\""){inStr=true;continue;}
+    if(ch==="{"||ch==="[") stack.push(ch);
+    else if(ch==="}"||ch==="]"){
+      const need=ch==="}"?"{":"[";
+      if(stack[stack.length-1]===need) stack.pop();
+    }
+  }
+  if(inStr) out+="\"";
+  out=out.replace(/,\s*$/,"");
+  while(stack.length) out+=stack.pop()==="{"?"}":"]";
+  return out;
+}
+function fallbackFor(stepId){
+  if(stepId==="script") return state.params.raw||SAMPLE_RAW;
+  if(stepId==="episodes") return fallbackEpisodes();
+  if(stepId==="storyboard") return fallbackStoryboard();
+  return fallbackAssets();
+}
+function fallbackEpisodes(){
+  const p=state.params;
+  const text=String(state.outputs.script||p.raw||SAMPLE_RAW).replace(/\s+/g," ").trim();
+  const total=Math.max(1,Math.min(Number(p.total)||4,6));
+  const partLen=Math.max(80,Math.ceil(text.length/total));
+  return {total_episodes:total,episodes:Array.from({length:total},(_,i)=>{
+    const part=text.slice(i*partLen,(i+1)*partLen)||text.slice(0,120);
+    return {ep_number:i+1,title:i===0?"开场冲突":`反转推进 ${i+1}`,duration_seconds:i===0?p.ep1:p.dur,characters:["主角","关键对手"],hook:part.slice(0,70),outline:part};
+  })};
+}
+function fallbackStoryboard(){
+  const eps=state.outputs.episodes?.episodes||fallbackEpisodes().episodes;
+  return {episodes:eps.map(ep=>({ep_number:ep.ep_number,shots:[
+    {shot_number:1,duration_seconds:8,shot_size:"中景",camera:"缓慢推进",visual:ep.outline||ep.title,audio_or_caption:ep.title,purpose:"建立情境",visual_prompt:`vertical short-drama establishing shot, ${styleFrag()} --ar 9:16`},
+    {shot_number:2,duration_seconds:10,shot_size:"近景",camera:"手持跟拍",visual:ep.hook||"角色情绪爆发",audio_or_caption:ep.hook,purpose:"制造钩子",visual_prompt:`vertical short-drama emotional close shot, ${styleFrag()} --ar 9:16`}
+  ]}))};
+}
+function fallbackAssets(){
+  const eps=state.outputs.episodes?.episodes||[];
+  const chars=[...new Set(eps.flatMap(e=>e.characters||[]))].filter(Boolean).slice(0,4);
+  const items=chars.length?chars.map((name,i)=>({name,tag:i===0?"主角":"角色",note:"根据分集剧本自动提取",appears_in_episodes:[1],image_prompt:`vertical short-drama character portrait of ${name}, ${styleFrag()} --ar 9:16`})):[{name:"短剧主视觉",tag:"主视觉",note:"兜底资产",appears_in_episodes:[1],image_prompt:`vertical short-drama key visual, ${styleFrag()} --ar 9:16`}];
+  return {groups:[{category:"角色造型",items},{category:"核心场景",items:[{name:"核心冲突场景",tag:"场景",note:"承载开场冲突和结尾反转",appears_in_episodes:[1],image_prompt:`vertical short-drama conflict scene, ${styleFrag()} --ar 9:16`}]}]};
+}
+
+function openEdit(stepId){
+  if(!stepDone(stepId)){toast("这一步还没有生成");return;}
+  editStepId=stepId;
+  document.getElementById("editTitle").textContent=`修改：${STEPS.find(s=>s.id===stepId).title}`;
+  document.getElementById("editTarget").value="";
+  document.getElementById("editText").value="";
+  document.getElementById("editModal").classList.add("on");
+}
+function closeEdit(){document.getElementById("editModal").classList.remove("on");}
+async function submitRevision(){
+  const target=document.getElementById("editTarget").value.trim();
+  const text=document.getElementById("editText").value.trim();
+  if(!editStepId||!text){toast("请填写修改要求");return;}
+  closeEdit();
+  await reviseStep(editStepId,target,text);
+}
+async function applyChatInstruction(){
+  const text=document.getElementById("chatInput").value.trim();
+  if(!text) return;
+  document.getElementById("chatInput").value="";
+  const step=currentStep();
+  addMessage("user",{text});
+  if(stepDone(step.id)) await reviseStep(step.id,"当前步骤",text);
+  else toast("当前步骤还没有生成");
+}
+async function reviseStep(stepId,target,text){
+  const step=STEPS.find(s=>s.id===stepId);
+  state.running=true;
+  state.active=STEPS.findIndex(s=>s.id===stepId);
+  renderAll();
+  let usedFallback=false;
+  try{
+    const existing=step.wantJSON?JSON.stringify(state.outputs[stepId]):String(state.outputs[stepId]||"");
+    const sys=step.wantJSON?
+      `你是${step.title}修订助手。按用户要求修改已有 JSON，只返回同一结构的完整 JSON，不要解释。`:
+      `你是${step.title}修订助手。按用户要求修改已有剧本文本，只返回修改后的正文，不要解释。`;
+    const user=`【修改目标】${target||"未指定"}\n【修改要求】${text}\n【已有内容】\n${compact(existing,5200)}`;
+    const raw=await callLLM(sys,user,step.wantJSON);
+    state.outputs[stepId]=step.wantJSON?parseJSON(raw):raw.trim();
+  }catch(_err){
+    usedFallback=true;
+  }finally{
+    state.running=false;
+  }
+  addCompletionMessage(stepId,usedFallback);
+  renderAll();
+}
+
+function openRaw(stepId){
+  if(!stepDone(stepId)){toast("这一步还没有数据");return;}
+  const value=state.outputs[stepId];
+  document.getElementById("rawData").textContent=typeof value==="string"?value:JSON.stringify(value,null,2);
+  document.getElementById("rawModal").classList.add("on");
+}
+function closeRaw(){document.getElementById("rawModal").classList.remove("on");}
+
+function initAdminMode(){
+  const params=new URLSearchParams(location.search);
+  if(params.get("admin")==="1") localStorage.setItem("admin_settings","1");
+  if(params.get("admin")==="0") localStorage.removeItem("admin_settings");
+  document.getElementById("settingsBtn").style.display=localStorage.getItem("admin_settings")==="1"?"inline-flex":"none";
+}
+function openSettings(){
+  document.getElementById("provider").value=localStorage.getItem("oa_provider")||"openai";
+  document.getElementById("model").value=localStorage.getItem("oa_model")||"gpt-4o-mini";
+  document.getElementById("baseUrl").value=localStorage.getItem("oa_base")||"";
+  document.getElementById("apiKey").value=localStorage.getItem("oa_key")||"";
+  document.getElementById("settingsModal").classList.add("on");
+}
+function closeSettings(){document.getElementById("settingsModal").classList.remove("on");}
+function normalizeBaseInput(v){
+  let b=String(v||"").trim();
+  if(!b) return "";
+  b=b.replace(/\/chat\/completions\/?$/i,"").replace(/\/+$/,"");
+  try{
+    const u=new URL(b);
+    const version=u.pathname.match(/^(.*?\/v\d+)(?:\/.*)?$/i);
+    if(version){u.pathname=version[1];return u.toString().replace(/\/+$/,"");}
+    const clean=u.pathname.replace(/\/+$/,"");
+    const dashboard=!clean||clean==="/"||/\/(?:login|dashboard|console|admin|app|home)$/i.test(clean);
+    u.pathname=(dashboard?"":clean)+"/v1";
+    return u.toString().replace(/\/+$/,"");
+  }catch(_e){return b;}
+}
+function saveSettings(){
+  localStorage.setItem("oa_provider",document.getElementById("provider").value);
+  localStorage.setItem("oa_model",document.getElementById("model").value.trim()||"gpt-4o-mini");
+  localStorage.setItem("oa_base",normalizeBaseInput(document.getElementById("baseUrl").value));
+  localStorage.setItem("oa_key",document.getElementById("apiKey").value.trim());
+  closeSettings();
+  toast("接口设置已保存");
+}
+
+document.addEventListener("DOMContentLoaded",init);
+</script>
+</body>
+</html>

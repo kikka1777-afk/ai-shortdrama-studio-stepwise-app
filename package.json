@@ -1,0 +1,6 @@
+{
+  "name": "ai-shortdrama-studio-stepwise",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI short-drama studio stepwise workflow variant for Vercel"
+}
