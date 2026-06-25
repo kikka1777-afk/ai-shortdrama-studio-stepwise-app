@@ -1,5 +1,6 @@
 param(
   [string]$BaseUrl = "https://sub2api.aisite.net/v1",
+  [string]$Project = "ai-shortdrama-studio-stepwise-app",
   [switch]$SkipDeploy
 )
 
@@ -55,12 +56,12 @@ function Set-VercelProductionEnv {
   Write-Host "Syncing $Name to Vercel production..."
 
   try {
-    Invoke-Vercel -VercelArgs @("env", "rm", $Name, "production", "--yes", "--no-color") | Out-Host
+    Invoke-Vercel -VercelArgs @("env", "rm", $Name, "production", "--yes", "--no-color", "--project", $Project) | Out-Host
   } catch {
     Write-Host "$Name did not exist or could not be removed first; continuing..."
   }
 
-  Invoke-VercelWithInput -InputValue $Value -VercelArgs @("env", "add", $Name, "production", "--no-color") | Out-Host
+  Invoke-VercelWithInput -InputValue $Value -VercelArgs @("env", "add", $Name, "production", "--no-color", "--project", $Project) | Out-Host
 }
 
 $secureKey = Read-Host "Paste OPENAI_API_KEY / Sub2API key" -AsSecureString
@@ -78,7 +79,7 @@ $plainKey = $null
 
 if (-not $SkipDeploy) {
   Write-Host "Redeploying production..."
-  Invoke-Vercel -VercelArgs @("deploy", "--prod", "--no-color", "--non-interactive") | Out-Host
+  Invoke-Vercel -VercelArgs @("deploy", "--prod", "--no-color", "--non-interactive", "--project", $Project) | Out-Host
 }
 
 Write-Host "Done. Teammates can now use the app without entering Base URL or key."
