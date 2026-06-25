@@ -6,9 +6,6 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$projectRoot = Split-Path -Parent $PSScriptRoot
-Set-Location -LiteralPath $projectRoot
-
 function Get-PlainTextFromSecureString {
   param([securestring]$Secure)
 
@@ -64,22 +61,42 @@ function Set-VercelProductionEnv {
   Invoke-VercelWithInput -InputValue $Value -VercelArgs @("env", "add", $Name, "production", "--no-color", "--project", $Project) | Out-Host
 }
 
-$secureKey = Read-Host "Paste OPENAI_API_KEY / Sub2API key" -AsSecureString
-$plainKey = Get-PlainTextFromSecureString $secureKey
+try {
+  $projectRoot = Split-Path -Parent $PSScriptRoot
+  Set-Location -LiteralPath $projectRoot
 
-if ([string]::IsNullOrWhiteSpace($plainKey)) {
-  throw "OPENAI_API_KEY is empty."
+  Write-Host ""
+  Write-Host "Target Vercel project: $Project"
+  Write-Host "OPENAI_BASE_URL will be set to: $BaseUrl"
+  Write-Host ""
+
+  $secureKey = Read-Host "Paste OPENAI_API_KEY / Sub2API key" -AsSecureString
+  $plainKey = Get-PlainTextFromSecureString $secureKey
+
+  if ([string]::IsNullOrWhiteSpace($plainKey)) {
+    throw "OPENAI_API_KEY is empty."
+  }
+
+  Set-VercelProductionEnv -Name "OPENAI_BASE_URL" -Value $BaseUrl
+  Set-VercelProductionEnv -Name "OPENAI_API_KEY" -Value $plainKey
+
+  $plainKey = $null
+  [GC]::Collect()
+
+  if (-not $SkipDeploy) {
+    Write-Host "Redeploying production..."
+    Invoke-Vercel -VercelArgs @("deploy", "--prod", "--no-color", "--non-interactive", "--project", $Project) | Out-Host
+  }
+
+  Write-Host ""
+  Write-Host "Done. Teammates can now use the app without entering Base URL or key."
+} catch {
+  Write-Host ""
+  Write-Host "FAILED:" -ForegroundColor Red
+  Write-Host $_.Exception.Message -ForegroundColor Red
+  Write-Host ""
+  Write-Host "If this says Vercel is not logged in, run: vercel login"
+} finally {
+  Write-Host ""
+  Read-Host "Press Enter to close this window"
 }
-
-Set-VercelProductionEnv -Name "OPENAI_BASE_URL" -Value $BaseUrl
-Set-VercelProductionEnv -Name "OPENAI_API_KEY" -Value $plainKey
-
-$plainKey = $null
-[GC]::Collect()
-
-if (-not $SkipDeploy) {
-  Write-Host "Redeploying production..."
-  Invoke-Vercel -VercelArgs @("deploy", "--prod", "--no-color", "--non-interactive", "--project", $Project) | Out-Host
-}
-
-Write-Host "Done. Teammates can now use the app without entering Base URL or key."
