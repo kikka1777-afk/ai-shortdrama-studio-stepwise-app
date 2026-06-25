@@ -713,8 +713,8 @@ const STEPS=[
   {id:"script",agent:"S1",title:"剧本",desc:"原始素材到短剧故事正文。",hint:"粘贴剧本、小说片段、故事设定，或写本步修改建议。"},
   {id:"episodes",agent:"S2",title:"分集剧本",desc:"拆出每集标题、时长、角色、钩子。",hint:"输入集数节奏、某集重点、要删除或加强的支线。"},
   {id:"characters",agent:"S3",title:"角色设定",desc:"统一人物动机、外形、声音与表演方向。",hint:"输入角色修改建议，例如加强女主主动性、弱化反派脸谱化。"},
-  {id:"storyboard",agent:"S4",title:"分镜剧本",desc:"把分集剧本拆成可拍摄镜头。",hint:"输入镜头修改建议，例如增加近景、强化反转、统一场景调度。"},
-  {id:"assets",agent:"S5",title:"素材清单",desc:"角色、场景、道具、封面与 image prompt。",hint:"输入美术修改建议，例如统一黑金色调、增加封面图提示。"}
+  {id:"assets",agent:"S4",title:"素材清单",desc:"先统一角色、场景、道具、封面与 image prompt。",hint:"输入美术修改建议，例如统一黑金色调、增加封面图提示。"},
+  {id:"storyboard",agent:"S5",title:"分镜剧本",desc:"再按素材清单拆成可拍摄镜头。",hint:"输入镜头修改建议，例如增加近景、强化反转、统一场景调度。"}
 ];
 let state={
   version:APP_VERSION,
@@ -986,10 +986,10 @@ async function generateStep(stepId){
   if(stepId==="characters"){
     return callLLM(prompts().characters,`【剧本】\n${compact(state.outputs.script,4600)}\n【分集剧本】\n${compact(JSON.stringify(state.outputs.episodes),4200)}`,true);
   }
-  if(stepId==="storyboard"){
-    return callLLM(prompts().storyboard,`【画风】${p.style}\n【剧本】\n${compact(state.outputs.script,2200)}\n【分集剧本】\n${compact(JSON.stringify(state.outputs.episodes),4200)}\n【角色设定】\n${compact(JSON.stringify(state.outputs.characters),3000)}`,true);
+  if(stepId==="assets"){
+    return callLLM(prompts().assets,`【画风】${p.style}\n【剧本】\n${compact(state.outputs.script,2200)}\n【分集剧本】\n${compact(JSON.stringify(state.outputs.episodes),4200)}\n【角色设定】\n${compact(JSON.stringify(state.outputs.characters),3200)}`,true);
   }
-  return callLLM(prompts().assets,`【画风】${p.style}\n【剧本】\n${compact(state.outputs.script,1800)}\n【分集剧本】\n${compact(JSON.stringify(state.outputs.episodes),3200)}\n【角色设定】\n${compact(JSON.stringify(state.outputs.characters),2600)}\n【分镜剧本】\n${compact(JSON.stringify(state.outputs.storyboard),4200)}`,true);
+  return callLLM(prompts().storyboard,`【画风】${p.style}\n【剧本】\n${compact(state.outputs.script,1800)}\n【分集剧本】\n${compact(JSON.stringify(state.outputs.episodes),3600)}\n【角色设定】\n${compact(JSON.stringify(state.outputs.characters),2600)}\n【素材清单】\n${compact(JSON.stringify(state.outputs.assets),3600)}`,true);
 }
 function prompts(){
   const p=state.params;
@@ -1002,12 +1002,12 @@ JSON 格式：{"total_episodes":4,"episodes":[{"ep_number":1,"title":"","duratio
     characters:`# Role: 角色设定 Agent
 根据剧本和分集剧本提炼主要角色，最多 8 人。中文字段，image_prompt 用英文，并以 "${styleFrag()} --ar 9:16" 结尾。严格返回 JSON，不要代码块，不要解释。
 JSON 格式：{"characters":[{"name":"","role":"","desire":"","conflict":"","appearance":"","voice":"","image_prompt":""}]}`,
-    storyboard:`# Role: 分镜剧本 Agent
-把分集剧本拆成可拍摄关键分镜。每集输出 3-5 个镜头。中文 visual，英文 visual_prompt，并以 "${styleFrag()} --ar 9:16" 结尾。严格返回 JSON，不要代码块，不要解释。
-JSON 格式：{"episodes":[{"ep_number":1,"shots":[{"shot_number":1,"duration_seconds":8,"shot_size":"近景","camera":"手持推进","location":"","visual":"","audio_or_caption":"","purpose":"","visual_prompt":""}]}]}`,
     assets:`# Role: 美术资产 Agent
-根据剧本、分集、角色和分镜提取真正需要统一设计或单独出图的视觉资产。包含角色、场景、道具、封面/标题卡等。每项 image_prompt 用英文，并以 "${styleFrag()} --ar 9:16" 结尾。严格返回 JSON，不要代码块，不要解释。
-JSON 格式：{"groups":[{"category":"角色造型","items":[{"name":"","tag":"","note":"","appears_in_episodes":[1],"image_prompt":""}]}]}`
+根据剧本、分集和角色设定，先提取真正需要统一设计或单独出图的视觉资产。包含角色、场景、道具、封面/标题卡等。每项 image_prompt 用英文，并以 "${styleFrag()} --ar 9:16" 结尾。严格返回 JSON，不要代码块，不要解释。
+JSON 格式：{"groups":[{"category":"角色造型","items":[{"name":"","tag":"","note":"","appears_in_episodes":[1],"image_prompt":""}]}]}`,
+    storyboard:`# Role: 分镜剧本 Agent
+把分集剧本拆成可拍摄关键分镜，并严格参考素材清单保持角色、场景、道具和视觉风格一致。每集输出 3-5 个镜头。中文 visual，英文 visual_prompt，并以 "${styleFrag()} --ar 9:16" 结尾。严格返回 JSON，不要代码块，不要解释。
+JSON 格式：{"episodes":[{"ep_number":1,"shots":[{"shot_number":1,"duration_seconds":8,"shot_size":"近景","camera":"手持推进","location":"","visual":"","audio_or_caption":"","purpose":"","visual_prompt":""}]}]}`
   };
 }
 async function callLLM(system,user,wantJSON){

@@ -9,15 +9,15 @@ C:\Users\Administrator\.codex\skills\shortdrama-stepwise-agent
 ```
 
 Invoke it with `$shortdrama-stepwise-agent` when you want Codex to run the same
-script -> episodes -> characters -> storyboard -> assets workflow outside the web UI.
+script -> episodes -> characters -> assets -> storyboard workflow outside the web UI.
 
 It does not overwrite the original `ai-shortdrama-studio-app` project. The UI is organized as a guided workflow:
 
 1. Script
 2. Episode script
 3. Character bible
-4. Storyboard script
-5. Asset list
+4. Asset list
+5. Storyboard script
 
 Each step runs independently. After a step finishes, the left chat panel reports what was completed and shows a summary table. The fixed action bar then offers:
 
