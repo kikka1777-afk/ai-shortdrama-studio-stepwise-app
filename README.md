@@ -2,6 +2,15 @@
 
 This is an independent stepwise variant of the short-drama workflow app.
 
+The reusable Codex workflow is also installed locally as:
+
+```text
+C:\Users\Administrator\.codex\skills\shortdrama-stepwise-agent
+```
+
+Invoke it with `$shortdrama-stepwise-agent` when you want Codex to run the same
+script -> episodes -> characters -> storyboard -> assets workflow outside the web UI.
+
 It does not overwrite the original `ai-shortdrama-studio-app` project. The UI is organized as a guided workflow:
 
 1. Script
